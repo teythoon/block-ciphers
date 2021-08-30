@@ -1,11 +1,13 @@
 //! Autodetection support for hardware accelerated AES backends with fallback
 //! to the fixsliced "soft" implementation.
 
-use crate::{soft, Block, ParBlocks};
+use core::fmt;
+use crate::{soft, Block};
 use cipher::{
-    consts::{U16, U24, U32, U8},
+    consts::{U16, U24, U32},
     generic_array::GenericArray,
-    BlockCipher, BlockDecrypt, BlockEncrypt, NewBlockCipher,
+    inout::{InOutBuf, InOut, InTmpOutBuf, InSrc},
+    BlockCipher, BlockUser, BlockDecrypt, BlockEncrypt, KeyUser, KeyInit,
 };
 use core::mem::ManuallyDrop;
 
@@ -40,9 +42,11 @@ macro_rules! define_aes_impl {
             }
         }
 
-        impl NewBlockCipher for $name {
+        impl KeyUser for $name {
             type KeySize = $key_size;
+        }
 
+        impl KeyInit for $name {
             #[inline]
             fn new(key: &GenericArray<u8, $key_size>) -> Self {
                 let (token, aesni_present) = aes_intrinsics::init_get();
@@ -80,52 +84,67 @@ macro_rules! define_aes_impl {
             }
         }
 
-        impl BlockCipher for $name {
+        impl BlockUser for $name {
             type BlockSize = U16;
-            type ParBlocks = U8;
         }
+
+        impl BlockCipher for $name {}
 
         impl BlockEncrypt for $name {
             #[inline]
-            fn encrypt_block(&self, block: &mut Block) {
+            fn encrypt_block_inout(&self, block: InOut<'_, Block>) {
                 if self.token.get() {
-                    unsafe { self.inner.intrinsics.encrypt_block(block) }
+                    unsafe { self.inner.intrinsics.encrypt_block_inout(block) }
                 } else {
-                    unsafe { self.inner.soft.encrypt_block(block) }
+                    unsafe { self.inner.soft.encrypt_block_inout(block) }
                 }
             }
 
             #[inline]
-            fn encrypt_par_blocks(&self, blocks: &mut ParBlocks) {
+            fn encrypt_blocks_with_pre(
+                &self,
+                blocks: InOutBuf<'_, Block>,
+                pre_fn: impl FnMut(InTmpOutBuf<'_, Block>) -> InSrc,
+                post_fn: impl FnMut(InTmpOutBuf<'_, Block>),
+            ) {
                 if self.token.get() {
-                    unsafe { self.inner.intrinsics.encrypt_par_blocks(blocks) }
+                    unsafe { self.inner.intrinsics.encrypt_blocks_with_pre(blocks, pre_fn, post_fn) }
                 } else {
-                    unsafe { self.inner.soft.encrypt_par_blocks(blocks) }
+                    unsafe { self.inner.soft.encrypt_blocks_with_pre(blocks, pre_fn, post_fn) }
                 }
             }
         }
 
         impl BlockDecrypt for $name {
             #[inline]
-            fn decrypt_block(&self, block: &mut Block) {
+            fn decrypt_block_inout(&self, block: InOut<'_, Block>) {
                 if self.token.get() {
-                    unsafe { self.inner.intrinsics.decrypt_block(block) }
+                    unsafe { self.inner.intrinsics.decrypt_block_inout(block) }
                 } else {
-                    unsafe { self.inner.soft.decrypt_block(block) }
+                    unsafe { self.inner.soft.decrypt_block_inout(block) }
                 }
             }
 
             #[inline]
-            fn decrypt_par_blocks(&self, blocks: &mut ParBlocks) {
+            fn decrypt_blocks_with_pre(
+                &self,
+                blocks: InOutBuf<'_, Block>,
+                pre_fn: impl FnMut(InTmpOutBuf<'_, Block>) -> InSrc,
+                post_fn: impl FnMut(InTmpOutBuf<'_, Block>),
+            ) {
                 if self.token.get() {
-                    unsafe { self.inner.intrinsics.decrypt_par_blocks(blocks) }
+                    unsafe { self.inner.intrinsics.decrypt_blocks_with_pre(blocks, pre_fn, post_fn) }
                 } else {
-                    unsafe { self.inner.soft.decrypt_par_blocks(blocks) }
+                    unsafe { self.inner.soft.decrypt_blocks_with_pre(blocks, pre_fn, post_fn) }
                 }
             }
         }
 
-        opaque_debug::implement!($name);
+        impl fmt::Debug for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+                f.write_str(concat!(stringify!($name), " { .. }"))
+            }
+        }
     };
 }
 

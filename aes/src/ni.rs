@@ -28,6 +28,9 @@ mod aes128;
 mod aes192;
 mod aes256;
 
+#[cfg(test)]
+mod test_expand;
+
 #[cfg(feature = "ctr")]
 mod ctr;
 
@@ -39,7 +42,170 @@ use core::arch::x86 as arch;
 #[cfg(target_arch = "x86_64")]
 use core::arch::x86_64 as arch;
 
-pub use self::{aes128::Aes128, aes192::Aes192, aes256::Aes256};
+use core::fmt;
+use crate::Block;
+use cipher::{
+    consts::{U8, U16, U24, U32},
+    generic_array::{GenericArray, typenum::Unsigned},
+    inout::{InOutBuf, InOut, InTmpOutBuf, InSrc},
+    BlockCipher, BlockUser, BlockDecrypt, BlockEncrypt, KeyUser, KeyInit,
+};
+
+
+macro_rules! define_aes_impl {
+    (
+        $name: tt,
+        $module: tt,
+        $key_size: ty,
+        $doc: expr,
+    ) => {
+        #[doc=$doc]
+        #[derive(Clone)]
+        pub struct $name {
+            encrypt_keys: $module::RoundKeys,
+            decrypt_keys: $module::RoundKeys,
+        }
+
+        impl KeyUser for $name {
+            type KeySize = $key_size;
+        }
+
+        impl KeyInit for $name {
+            #[inline]
+            fn new(key: &GenericArray<u8, Self::KeySize>) -> Self {
+                // SAFETY: GenericArray<u8; KeySize> and [u8; KeySize::USIZE]
+                // are equivalent to each other. we enforce that this code
+                // is called only when target features required by `expand`
+                // were properly checked.
+                let (encrypt_keys, decrypt_keys) = unsafe {
+                    let key = &*(key as *const _ as *const [u8; <$key_size>::USIZE]);
+                    $module::expand(key)
+                };
+
+                Self { encrypt_keys, decrypt_keys, }
+            }
+        }
+
+        impl BlockUser for $name {
+            type BlockSize = U16;
+        }
+
+        impl BlockCipher for $name {}
+
+        impl BlockEncrypt for $name {
+            #[inline]
+            fn encrypt_block_inout(&self, block: InOut<'_, Block>) {
+                // SAFETY: we enforce that this code is called only when
+                // required target features were properly checked.
+                unsafe {
+                    $module::encrypt1(&self.encrypt_keys, block);
+                }
+            }
+
+            #[inline]
+            fn encrypt_blocks_with_pre(
+                &self,
+                blocks: InOutBuf<'_, Block>,
+                pre_fn: impl FnMut(InTmpOutBuf<'_, Block>) -> InSrc,
+                post_fn: impl FnMut(InTmpOutBuf<'_, Block>),
+            ) {
+                #[target_feature(enable = "aes")]
+                unsafe fn inner(
+                    keys: &$module::RoundKeys,
+                    blocks: InOutBuf<'_, Block>,
+                    pre_fn: impl FnMut(InTmpOutBuf<'_, Block>) -> InSrc,
+                    post_fn: impl FnMut(InTmpOutBuf<'_, Block>),
+                ) {
+                    blocks.process_chunks::<U8, _, _, _, _, _>(
+                        &keys,
+                        pre_fn,
+                        post_fn,
+                        |keys, chunk| $module::encrypt8(keys, chunk),
+                        |keys, chunk| for block in chunk {
+                            $module::encrypt1(keys, block);
+                        },
+                    )
+                }
+
+                // SAFETY: we enforce that this code is called only when
+                // required target features were properly checked.
+                unsafe {
+                    inner(&self.encrypt_keys, blocks, pre_fn, post_fn);
+                }
+            }
+        }
+
+        impl BlockDecrypt for $name {
+            #[inline]
+            fn decrypt_block_inout(&self, block: InOut<'_, Block>) {
+                // SAFETY: we enforce that this code is called only when
+                // required target features were properly checked.
+                unsafe {
+                    $module::decrypt1(&self.decrypt_keys, block);
+                }
+            }
+
+            #[inline]
+            fn decrypt_blocks_with_pre(
+                &self,
+                blocks: InOutBuf<'_, Block>,
+                pre_fn: impl FnMut(InTmpOutBuf<'_, Block>) -> InSrc,
+                post_fn: impl FnMut(InTmpOutBuf<'_, Block>),
+            ) {
+                #[target_feature(enable = "aes")]
+                unsafe fn inner(
+                    keys: &$module::RoundKeys,
+                    blocks: InOutBuf<'_, Block>,
+                    pre_fn: impl FnMut(InTmpOutBuf<'_, Block>) -> InSrc,
+                    post_fn: impl FnMut(InTmpOutBuf<'_, Block>),
+                ) {
+                    blocks.process_chunks::<U8, _, _, _, _, _>(
+                        &keys,
+                        pre_fn,
+                        post_fn,
+                        |keys, chunk| $module::decrypt8(keys, chunk),
+                        |keys, chunk| for block in chunk {
+                            $module::decrypt1(keys, block);
+                        },
+                    )
+                }
+
+                // SAFETY: we enforce that this code is called only when
+                // required target features were properly checked.
+                unsafe {
+                    inner(&self.decrypt_keys, blocks, pre_fn, post_fn);
+                }
+            }
+        }
+
+        impl fmt::Debug for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+                f.write_str(concat!(stringify!($name), " { .. }"))
+            }
+        }
+    };
+}
+
+define_aes_impl!(
+    Aes128,
+    aes128,
+    U16,
+    "AES-128 block cipher instance",
+);
+
+define_aes_impl!(
+    Aes192,
+    aes192,
+    U24,
+    "AES-192 block cipher instance",
+);
+
+define_aes_impl!(
+    Aes256,
+    aes256,
+    U32,
+    "AES-256 block cipher instance",
+);
 
 #[cfg(feature = "ctr")]
 pub use self::ctr::{Aes128Ctr, Aes192Ctr, Aes256Ctr};

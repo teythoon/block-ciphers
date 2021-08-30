@@ -18,13 +18,15 @@ mod ctr;
 #[cfg(feature = "ctr")]
 pub use self::ctr::{Aes128Ctr, Aes192Ctr, Aes256Ctr};
 
-use crate::{Block, ParBlocks};
+use core::fmt;
+use crate::Block;
 use cipher::{
-    consts::{U16, U24, U32, U8},
+    consts::{U16, U24, U32},
     generic_array::GenericArray,
-    BlockCipher, BlockDecrypt, BlockEncrypt, NewBlockCipher,
+    inout::{InOut, InOutBuf, InTmpOutBuf, InSrc},
+    BlockUser, BlockCipher, BlockDecrypt, BlockEncrypt, KeyInit, KeyUser,
 };
-use fixslice::{FixsliceKeys128, FixsliceKeys192, FixsliceKeys256, FIXSLICE_BLOCKS};
+use fixslice::{FixsliceKeys128, FixsliceKeys192, FixsliceKeys256, FixsliceBlocks, BatchBlocks};
 
 macro_rules! define_aes_impl {
     (
@@ -42,9 +44,11 @@ macro_rules! define_aes_impl {
             keys: $fixslice_keys,
         }
 
-        impl NewBlockCipher for $name {
+        impl KeyUser for $name {
             type KeySize = $key_size;
+        }
 
+        impl KeyInit for $name {
             #[inline]
             fn new(key: &GenericArray<u8, $key_size>) -> Self {
                 Self {
@@ -53,46 +57,78 @@ macro_rules! define_aes_impl {
             }
         }
 
-        impl BlockCipher for $name {
+        impl BlockUser for $name {
             type BlockSize = U16;
-            type ParBlocks = U8;
         }
+
+        impl BlockCipher for $name {}
 
         impl BlockEncrypt for $name {
             #[inline]
-            fn encrypt_block(&self, block: &mut Block) {
-                let mut blocks = [Block::default(); FIXSLICE_BLOCKS];
-                blocks[0].copy_from_slice(block);
-                $fixslice_encrypt(&self.keys, &mut blocks);
-                block.copy_from_slice(&blocks[0]);
+            fn encrypt_block_inout(&self, block: InOut<'_, Block>) {
+                let mut blocks = BatchBlocks::default();
+                blocks[0] = *block.get_in();
+                *(block.get_out()) = $fixslice_encrypt(&self.keys, &blocks)[0];
             }
 
-            #[inline]
-            fn encrypt_par_blocks(&self, blocks: &mut ParBlocks) {
-                for chunk in blocks.chunks_mut(FIXSLICE_BLOCKS) {
-                    $fixslice_encrypt(&self.keys, chunk);
-                }
+            fn encrypt_blocks_with_pre(
+                &self,
+                blocks: InOutBuf<'_, Block>,
+                pre_fn: impl FnMut(InTmpOutBuf<'_, Block>) -> InSrc,
+                post_fn: impl FnMut(InTmpOutBuf<'_, Block>),
+            ) {
+                blocks.process_chunks::<FixsliceBlocks, _, _, _, _, _>(
+                    &self.keys,
+                    pre_fn,
+                    post_fn,
+                    |keys, chunk| *chunk.get_out() = $fixslice_encrypt(keys, chunk.get_in()),
+                    |keys, chunk| {
+                        let n = chunk.len();
+                        let mut blocks = BatchBlocks::default();
+                        blocks[..n].copy_from_slice(chunk.get_in());
+                        let res = $fixslice_encrypt(keys, &blocks);
+                        chunk.get_out().copy_from_slice(&res[..n]);
+                    },
+                )
             }
         }
 
         impl BlockDecrypt for $name {
             #[inline]
-            fn decrypt_block(&self, block: &mut Block) {
-                let mut blocks = [Block::default(); FIXSLICE_BLOCKS];
-                blocks[0].copy_from_slice(block);
-                $fixslice_decrypt(&self.keys, &mut blocks);
-                block.copy_from_slice(&blocks[0]);
+            fn decrypt_block_inout(&self, block: InOut<'_, Block>) {
+                let mut blocks = BatchBlocks::default();
+                blocks[0] = *block.get_in();
+                *(block.get_out()) = $fixslice_decrypt(&self.keys, &blocks)[0];
             }
 
             #[inline]
-            fn decrypt_par_blocks(&self, blocks: &mut ParBlocks) {
-                for chunk in blocks.chunks_mut(FIXSLICE_BLOCKS) {
-                    $fixslice_decrypt(&self.keys, chunk);
-                }
+            fn decrypt_blocks_with_pre(
+                &self,
+                blocks: InOutBuf<'_, Block>,
+                pre_fn: impl FnMut(InTmpOutBuf<'_, Block>) -> InSrc,
+                post_fn: impl FnMut(InTmpOutBuf<'_, Block>),
+            ) {
+                blocks.process_chunks::<FixsliceBlocks, _, _, _, _, _>(
+                    &self.keys,
+                    pre_fn,
+                    post_fn,
+                    |keys, chunk| *chunk.get_out() = $fixslice_decrypt(keys, chunk.get_in()),
+                    |keys, chunk| {
+                        let n = chunk.len();
+                        let mut blocks = BatchBlocks::default();
+                        blocks[..n].copy_from_slice(chunk.get_in());
+                        let res = $fixslice_decrypt(keys, &blocks);
+                        chunk.get_out().copy_from_slice(&res[..n]);
+                    },
+                )
             }
         }
 
-        opaque_debug::implement!($name);
+        impl fmt::Debug for $name {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+                f.write_str(concat!(stringify!($name), " { .. }"))
+            }
+        }
     };
 }
 

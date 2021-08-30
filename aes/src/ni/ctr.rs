@@ -2,8 +2,6 @@
 
 // TODO(tarcieri): support generic CTR API
 
-#![allow(clippy::unreadable_literal)]
-
 use super::arch::*;
 use core::mem;
 
@@ -30,9 +28,6 @@ pub fn xor(buf: &mut [u8], key: &[u8]) {
 #[inline(always)]
 fn xor_block8(buf: &mut [u8], ctr: [__m128i; 8]) {
     debug_assert_eq!(buf.len(), PAR_BLOCKS_SIZE);
-
-    // Safety: `loadu` and `storeu` support unaligned access
-    #[allow(clippy::cast_ptr_alignment)]
     unsafe {
         // compiler should unroll this loop
         for i in 0..8 {
@@ -59,8 +54,6 @@ fn inc_be(v: __m128i) -> __m128i {
 
 #[inline(always)]
 fn load(val: &GenericArray<u8, U16>) -> __m128i {
-    // Safety: `loadu` supports unaligned loads
-    #[allow(clippy::cast_ptr_alignment)]
     unsafe {
         _mm_loadu_si128(val.as_ptr() as *const __m128i)
     }

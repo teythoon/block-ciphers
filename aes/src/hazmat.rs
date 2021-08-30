@@ -11,7 +11,7 @@
 //! We do NOT recommending using it to implement any algorithm which has not
 //! received extensive peer review by cryptographers.
 
-use crate::{soft::fixslice::hazmat as soft, Block, ParBlocks};
+use crate::{soft::fixslice::hazmat as soft, Block, Block8};
 
 #[cfg(all(
     target_arch = "aarch64",
@@ -87,7 +87,7 @@ pub fn cipher_round(block: &mut Block, round_key: &Block) {
 ///
 /// Use this function with great care! See the [module-level documentation][crate::hazmat]
 /// for more information.
-pub fn cipher_round_par(blocks: &mut ParBlocks, round_keys: &ParBlocks) {
+pub fn cipher_round_par(blocks: &mut Block8, round_keys: &Block8) {
     if_intrinsics_available! {
         intrinsics::cipher_round_par(blocks, round_keys)
     }
@@ -127,7 +127,7 @@ pub fn equiv_inv_cipher_round(block: &mut Block, round_key: &Block) {
 ///
 /// Use this function with great care! See the [module-level documentation][crate::hazmat]
 /// for more information.
-pub fn equiv_inv_cipher_round_par(blocks: &mut ParBlocks, round_keys: &ParBlocks) {
+pub fn equiv_inv_cipher_round_par(blocks: &mut Block8, round_keys: &Block8) {
     if_intrinsics_available! {
         intrinsics::equiv_inv_cipher_round_par(blocks, round_keys)
     }
