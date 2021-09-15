@@ -48,7 +48,7 @@ use cipher::{
     consts::{U8, U16, U24, U32},
     generic_array::{GenericArray, typenum::Unsigned},
     inout::{InOutBuf, InOut, InTmpOutBuf, InSrc},
-    BlockCipher, BlockUser, BlockDecrypt, BlockEncrypt, KeyUser, KeyInit,
+    BlockCipher, BlockSizeUser, BlockDecrypt, BlockEncrypt, KeySizeUser, KeyInit,
 };
 
 
@@ -66,7 +66,7 @@ macro_rules! define_aes_impl {
             decrypt_keys: $module::RoundKeys,
         }
 
-        impl KeyUser for $name {
+        impl KeySizeUser for $name {
             type KeySize = $key_size;
         }
 
@@ -86,7 +86,7 @@ macro_rules! define_aes_impl {
             }
         }
 
-        impl BlockUser for $name {
+        impl BlockSizeUser for $name {
             type BlockSize = U16;
         }
 

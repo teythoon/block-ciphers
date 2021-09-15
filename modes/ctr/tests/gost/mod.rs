@@ -1,4 +1,4 @@
-use cipher::{NewCipher, StreamCipher};
+use cipher::{KeyIvInit, StreamCipher};
 use hex_literal::hex;
 
 type MagmaCtr = ctr::Ctr32BE<magma::Magma>;

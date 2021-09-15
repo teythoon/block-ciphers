@@ -25,12 +25,12 @@
 //! let mut cipher = Aes128Ctr::new(key.into(), nonce.into());
 //!
 //! // apply keystream (encrypt)
-//! cipher.apply_keystream_inplace(&mut data);
+//! cipher.apply_keystream(&mut data);
 //! assert_eq!(data, [6, 245, 126, 124, 180, 146, 37]);
 //!
 //! // seek to the keystream beginning and apply it again to the `data` (decrypt)
 //! cipher.seek(0);
-//! cipher.apply_keystream_inplace(&mut data);
+//! cipher.apply_keystream(&mut data);
 //! assert_eq!(data, [1, 2, 3, 4, 5, 6, 7]);
 //! ```
 //!
@@ -46,9 +46,9 @@
 
 pub use cipher;
 use cipher::{
-    crypto_common::{InnerUser, IvUser},
+    crypto_common::{InnerUser, IvSizeUser},
     inout::{InOutBuf, InSrc},
-    Block, BlockEncryptMut, BlockUser, InnerIvInit, Iv, IvState, StreamCipherCore,
+    Block, BlockEncryptMut, BlockSizeUser, InnerIvInit, Iv, IvState, StreamCipherCore,
     StreamCipherCoreWrapper, StreamCipherSeekCore,
 };
 
@@ -82,7 +82,7 @@ where
     counter: F,
 }
 
-impl<B, F> BlockUser for CtrCore<B, F>
+impl<B, F> BlockSizeUser for CtrCore<B, F>
 where
     B: BlockEncryptMut,
     F: CtrFlavor<B::BlockSize>,
@@ -152,7 +152,7 @@ where
     type Inner = B;
 }
 
-impl<B, F> IvUser for CtrCore<B, F>
+impl<B, F> IvSizeUser for CtrCore<B, F>
 where
     B: BlockEncryptMut,
     F: CtrFlavor<B::BlockSize>,

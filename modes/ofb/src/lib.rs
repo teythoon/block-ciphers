@@ -11,10 +11,10 @@
 #![warn(missing_docs, rust_2018_idioms)]
 
 use cipher::{
-    crypto_common::{InnerUser, IvUser},
+    crypto_common::{InnerUser, IvSizeUser},
     generic_array::{ArrayLength, GenericArray},
     inout::{InOut, InOutBuf},
-    Block, BlockCipher, BlockDecryptMut, BlockEncryptMut, BlockUser, InnerIvInit, Iv, IvState,
+    Block, BlockCipher, BlockDecryptMut, BlockEncryptMut, BlockSizeUser, InnerIvInit, Iv, IvState,
     StreamCipherCore,
 };
 use core::slice::from_ref;
@@ -46,7 +46,7 @@ impl<C: BlockEncryptMut + BlockCipher> StreamCipherCore for Ofb<C> {
     }
 }
 
-impl<C: BlockEncryptMut + BlockCipher> BlockUser for Ofb<C> {
+impl<C: BlockEncryptMut + BlockCipher> BlockSizeUser for Ofb<C> {
     type BlockSize = C::BlockSize;
 }
 
@@ -54,7 +54,7 @@ impl<C: BlockEncryptMut + BlockCipher> InnerUser for Ofb<C> {
     type Inner = C;
 }
 
-impl<C: BlockEncryptMut + BlockCipher> IvUser for Ofb<C> {
+impl<C: BlockEncryptMut + BlockCipher> IvSizeUser for Ofb<C> {
     type IvSize = C::BlockSize;
 }
 

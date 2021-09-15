@@ -22,7 +22,7 @@ checksum = "fc52553543ecb104069b0ff9e0fcc5c739ad16202935528a112d974e8f1a4ee8"
 [[package]]
 name = "block-buffer"
 version = "0.10.0"
-source = "git+https://github.com/RustCrypto/utils?branch=pad_error#63cac368884f91a364a905739484ad0a77327abe"
+source = "git+https://github.com/RustCrypto/utils?branch=pad_error#6f564e5725114f3313c1c6a233f9bb50921c83ff"
 dependencies = [
  "block-padding",
  "generic-array",
@@ -32,7 +32,7 @@ dependencies = [
 [[package]]
 name = "block-padding"
 version = "0.3.0"
-source = "git+https://github.com/RustCrypto/utils?branch=pad_error#63cac368884f91a364a905739484ad0a77327abe"
+source = "git+https://github.com/RustCrypto/utils?branch=pad_error#6f564e5725114f3313c1c6a233f9bb50921c83ff"
 dependencies = [
  "generic-array",
 ]
@@ -105,7 +105,7 @@ dependencies = [
 [[package]]
 name = "cipher"
 version = "0.4.0"
-source = "git+https://github.com/RustCrypto/traits/?branch=new_traits#784ddf1c676a2987a8ab68bbb8f106b8e3d96fb2"
+source = "git+https://github.com/RustCrypto/traits/?branch=new_traits#6cde8298210c1771ca41df14d7e843282770297b"
 dependencies = [
  "blobby",
  "block-buffer",
@@ -125,7 +125,7 @@ dependencies = [
 [[package]]
 name = "crypto-common"
 version = "0.1.0"
-source = "git+https://github.com/RustCrypto/traits/?branch=new_traits#784ddf1c676a2987a8ab68bbb8f106b8e3d96fb2"
+source = "git+https://github.com/RustCrypto/traits/?branch=new_traits#6cde8298210c1771ca41df14d7e843282770297b"
 dependencies = [
  "block-buffer",
  "generic-array",
@@ -138,8 +138,8 @@ dependencies = [
  "aes",
  "cipher 0.4.0",
  "hex-literal",
- "kuznyechik 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "magma 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "kuznyechik",
+ "magma",
 ]
 
 [[package]]
@@ -208,51 +208,31 @@ dependencies = [
 [[package]]
 name = "inout"
 version = "0.1.0"
-source = "git+https://github.com/RustCrypto/utils?branch=pad_error#63cac368884f91a364a905739484ad0a77327abe"
+source = "git+https://github.com/RustCrypto/utils?branch=pad_error#6f564e5725114f3313c1c6a233f9bb50921c83ff"
 dependencies = [
  "generic-array",
 ]
 
 [[package]]
 name = "kuznyechik"
-version = "0.7.2"
+version = "0.8.0"
 dependencies = [
- "cipher 0.3.0",
+ "cipher 0.4.0",
  "hex-literal",
-]
-
-[[package]]
-name = "kuznyechik"
-version = "0.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a4e0a85306cf7cdcd497111b9ecd8df4da5290bacd3cc2f426ce3fb2c0a327e"
-dependencies = [
- "cipher 0.3.0",
 ]
 
 [[package]]
 name = "libc"
-version = "0.2.101"
+version = "0.2.102"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3cb00336871be5ed2c8ed44b60ae9959dc5b9f08539422ed43f09e34ecaeba21"
+checksum = "a2a5ac8f984bfcf3a823267e5fde638acc3325f6496633a5da6bb6eb2171e103"
 
 [[package]]
 name = "magma"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
- "cipher 0.3.0",
+ "cipher 0.4.0",
  "hex-literal",
- "opaque-debug",
-]
-
-[[package]]
-name = "magma"
-version = "0.7.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "53792c7fca348c3d880c5ab2b0a2378a28edca57d080feabc4b60b4633dff91b"
-dependencies = [
- "cipher 0.3.0",
- "opaque-debug",
 ]
 
 [[package]]
@@ -279,9 +259,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro-hack"
-version = "0.5.18"
+version = "0.5.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99c605b9a0adc77b7211c6b1f722dcb613d68d66859a44f3d485a6da332b0598"
+checksum = "dbf0c48bc1d91375ae5c3cd81e3722dff1abcf81a30960240640d223f59fe0e5"
 
 [[package]]
 name = "rc2"
@@ -329,12 +309,12 @@ dependencies = [
 
 [[package]]
 name = "typenum"
-version = "1.12.0"
+version = "1.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "373c8a200f9e67a0c95e62a4f52fbf80c23b4381c05a17845531982fa99e6b33"
+checksum = "b63708a265f51345575b27fe43f9500ad611579e764c79edbc2037b1121959ec"
 
 [[package]]
 name = "version_check"
-version = "0.9.2"
+version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5a972e5669d67ba988ce3dc826706fb0a8b01471c088cb0b6110b805cc36aed"
+checksum = "5fecdca9a5291cc2b8dcf7dc02453fee791a280f3743cb0905f8822ae463b3fe"

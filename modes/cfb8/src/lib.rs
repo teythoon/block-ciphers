@@ -11,11 +11,11 @@
 #![warn(missing_docs, rust_2018_idioms)]
 
 use cipher::{
-    crypto_common::{InnerUser, IvUser},
+    crypto_common::{InnerUser, IvSizeUser},
     generic_array::typenum::U1,
     inout::{InOut, InOutBuf},
     AsyncStreamCipher, AsyncStreamCipherCore, Block, BlockCipher, BlockDecryptMut, BlockEncryptMut,
-    BlockUser, InnerIvInit, Iv, IvState,
+    BlockSizeUser, InnerIvInit, Iv, IvState,
 };
 
 /// CFB-8 mode encryptor.
@@ -76,7 +76,7 @@ impl<C: BlockEncryptMut + BlockCipher> AsyncStreamCipher for Cfb8<C> {
     }
 }
 
-impl<C: BlockEncryptMut + BlockCipher> BlockUser for Cfb8<C> {
+impl<C: BlockEncryptMut + BlockCipher> BlockSizeUser for Cfb8<C> {
     type BlockSize = U1;
 }
 
@@ -86,7 +86,7 @@ impl<C: BlockEncryptMut + BlockCipher> InnerUser for Cfb8<C> {
     type Inner = C;
 }
 
-impl<C: BlockEncryptMut + BlockCipher> IvUser for Cfb8<C> {
+impl<C: BlockEncryptMut + BlockCipher> IvSizeUser for Cfb8<C> {
     type IvSize = C::BlockSize;
 }
 

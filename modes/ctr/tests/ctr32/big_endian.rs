@@ -1,6 +1,6 @@
 //! Counter Mode with a 32-bit big endian counter
 
-use cipher::{KeyIvInit, StreamCipher, StreamCipherSeekCore};
+use cipher::{KeyIvInit, StreamCipher, StreamCipherSeekCore, StreamCipherSeek};
 use hex_literal::hex;
 
 type Aes128Ctr = ctr::Ctr32BE<aes::Aes128>;
@@ -15,7 +15,7 @@ fn counter_incr() {
     assert_eq!(ctr.get_core().get_block_pos(), 0);
 
     let mut buffer = [0u8; 64];
-    ctr.apply_keystream_inplace(&mut buffer);
+    ctr.apply_keystream(&mut buffer);
 
     assert_eq!(ctr.get_core().get_block_pos(), 4);
     assert_eq!(
@@ -30,13 +30,13 @@ fn counter_incr() {
 #[test]
 fn counter_seek() {
     let mut ctr = Aes128Ctr::new(KEY.into(), NONCE1.into());
-    ctr.seek_block(1);
-    assert_eq!(ctr.current_block(), 1);
+    ctr.seek(16);
+    assert_eq!(ctr.get_core().get_block_pos(), 1);
 
     let mut buffer = [0u8; 64];
-    ctr.apply_keystream_inplace(&mut buffer);
+    ctr.apply_keystream(&mut buffer);
 
-    assert_eq!(ctr.current_block(), 5);
+    assert_eq!(ctr.get_core().get_block_pos(), 5);
     assert_eq!(
         &buffer[..],
         &hex!(
@@ -51,7 +51,7 @@ fn keystream_xor() {
     let mut ctr = Aes128Ctr::new(KEY.into(), NONCE1.into());
     let mut buffer = [1u8; 64];
 
-    ctr.apply_keystream_inplace(&mut buffer);
+    ctr.apply_keystream(&mut buffer);
     assert_eq!(
         &buffer[..],
         &hex!(
@@ -64,12 +64,12 @@ fn keystream_xor() {
 #[test]
 fn counter_wrap() {
     let mut ctr = Aes128Ctr::new(KEY.into(), NONCE2.into());
-    assert_eq!(ctr.current_block(), 0);
+    assert_eq!(ctr.get_core().get_block_pos(), 0);
 
     let mut buffer = [0u8; 64];
-    ctr.apply_keystream_inplace(&mut buffer);
+    ctr.apply_keystream(&mut buffer);
 
-    assert_eq!(ctr.current_block(), 4);
+    assert_eq!(ctr.get_core().get_block_pos(), 4);
     assert_eq!(
         &buffer[..],
         &hex!(

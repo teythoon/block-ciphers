@@ -24,7 +24,7 @@ use cipher::{
     consts::{U16, U24, U32},
     generic_array::GenericArray,
     inout::{InOut, InOutBuf, InTmpOutBuf, InSrc},
-    BlockUser, BlockCipher, BlockDecrypt, BlockEncrypt, KeyInit, KeyUser,
+    BlockSizeUser, BlockCipher, BlockDecrypt, BlockEncrypt, KeyInit, KeySizeUser,
 };
 use fixslice::{FixsliceKeys128, FixsliceKeys192, FixsliceKeys256, FixsliceBlocks, BatchBlocks};
 
@@ -44,7 +44,7 @@ macro_rules! define_aes_impl {
             keys: $fixslice_keys,
         }
 
-        impl KeyUser for $name {
+        impl KeySizeUser for $name {
             type KeySize = $key_size;
         }
 
@@ -57,7 +57,7 @@ macro_rules! define_aes_impl {
             }
         }
 
-        impl BlockUser for $name {
+        impl BlockSizeUser for $name {
             type BlockSize = U16;
         }
 

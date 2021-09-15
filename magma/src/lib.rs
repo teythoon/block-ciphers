@@ -3,8 +3,11 @@
 //!
 //! # Examples
 //! ```
-//! use magma::{Magma, BlockCipher, BlockEncrypt, BlockDecrypt, NewBlockCipher};
-//! use magma::cipher::generic_array::GenericArray;
+//! use magma::Magma;
+//! use magma::cipher::{
+//!     generic_array::GenericArray,
+//!     BlockEncrypt, BlockDecrypt, KeyInit,
+//! };
 //! use hex_literal::hex;
 //!
 //! // Example vector from GOST 34.12-2018
@@ -34,17 +37,24 @@
 #![deny(unsafe_code)]
 #![warn(rust_2018_idioms)]
 
-pub use cipher::{self, BlockCipher, BlockDecrypt, BlockEncrypt, NewBlockCipher};
+pub use cipher;
 
 use cipher::{
-    consts::{U1, U32, U8},
+    consts::{U32, U8},
     generic_array::GenericArray,
+    inout::InOut,
+    BlockCipher, BlockDecrypt, BlockEncrypt, BlockSizeUser, KeyInit, KeySizeUser,
 };
 use core::{convert::TryInto, marker::PhantomData};
 
 mod sboxes;
 
 pub use sboxes::Sbox;
+
+/// Block over which the Kuznyechik cipher operates.
+pub type Block = GenericArray<u8, U8>;
+/// The Kuznyechik cipher initialization key.
+pub type Key = GenericArray<u8, U32>;
 
 /// Block cipher defined in GOST 28147-89 generic over S-box
 #[derive(Clone, Copy)]
@@ -53,30 +63,34 @@ pub struct Gost89<S: Sbox> {
     _p: PhantomData<S>,
 }
 
-impl<S: Sbox> NewBlockCipher for Gost89<S> {
+impl<S: Sbox> KeySizeUser for Gost89<S> {
     type KeySize = U32;
+}
 
-    fn new(key: &GenericArray<u8, U32>) -> Self {
+impl<S: Sbox> KeyInit for Gost89<S> {
+    fn new(key: &Key) -> Self {
         let mut key_u32 = [0u32; 8];
         key.chunks_exact(4)
             .zip(key_u32.iter_mut())
             .for_each(|(chunk, v)| *v = to_u32(chunk));
         Self {
             key: key_u32,
-            _p: Default::default(),
+            _p: PhantomData,
         }
     }
 }
 
-impl<S: Sbox> BlockCipher for Gost89<S> {
+impl<S: Sbox> BlockSizeUser for Gost89<S> {
     type BlockSize = U8;
-    type ParBlocks = U1;
 }
+
+impl<S: Sbox> BlockCipher for Gost89<S> {}
 
 impl<S: Sbox> BlockEncrypt for Gost89<S> {
     #[inline]
-    fn encrypt_block(&self, block: &mut GenericArray<u8, U8>) {
-        let mut v = (to_u32(&block[0..4]), to_u32(&block[4..8]));
+    fn encrypt_block_inout(&self, block: InOut<'_, Block>) {
+        let b = block.get_in();
+        let mut v = (to_u32(&b[0..4]), to_u32(&b[4..8]));
         for _ in 0..3 {
             for i in 0..8 {
                 v = (v.1, v.0 ^ S::g(v.1, self.key[i]));
@@ -85,6 +99,7 @@ impl<S: Sbox> BlockEncrypt for Gost89<S> {
         for i in (0..8).rev() {
             v = (v.1, v.0 ^ S::g(v.1, self.key[i]));
         }
+        let block = block.get_out();
         block[0..4].copy_from_slice(&v.1.to_be_bytes());
         block[4..8].copy_from_slice(&v.0.to_be_bytes());
     }
@@ -92,8 +107,9 @@ impl<S: Sbox> BlockEncrypt for Gost89<S> {
 
 impl<S: Sbox> BlockDecrypt for Gost89<S> {
     #[inline]
-    fn decrypt_block(&self, block: &mut GenericArray<u8, U8>) {
-        let mut v = (to_u32(&block[0..4]), to_u32(&block[4..8]));
+    fn decrypt_block_inout(&self, block: InOut<'_, Block>) {
+        let b = block.get_in();
+        let mut v = (to_u32(&b[0..4]), to_u32(&b[4..8]));
 
         for i in 0..8 {
             v = (v.1, v.0 ^ S::g(v.1, self.key[i]));
@@ -104,6 +120,7 @@ impl<S: Sbox> BlockDecrypt for Gost89<S> {
                 v = (v.1, v.0 ^ S::g(v.1, self.key[i]));
             }
         }
+        let block = block.get_out();
         block[0..4].copy_from_slice(&v.1.to_be_bytes());
         block[4..8].copy_from_slice(&v.0.to_be_bytes());
     }

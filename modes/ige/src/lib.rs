@@ -11,18 +11,18 @@
 #![warn(missing_docs, rust_2018_idioms)]
 
 use cipher::{
-    crypto_common::{InnerUser, IvUser},
+    crypto_common::{InnerUser, IvSizeUser},
     generic_array::{
         sequence::Concat,
         typenum::{Sum, Unsigned},
         ArrayLength, GenericArray,
     },
     inout::InOut,
-    Block, BlockCipher, BlockDecryptMut, BlockEncryptMut, BlockUser, InnerIvInit, Iv, IvState,
+    Block, BlockCipher, BlockDecryptMut, BlockEncryptMut, BlockSizeUser, InnerIvInit, Iv, IvState,
 };
 use core::ops::Add;
 
-type BlockSize<C> = <C as BlockUser>::BlockSize;
+type BlockSize<C> = <C as BlockSizeUser>::BlockSize;
 type IgeIvSize<C> = Sum<BlockSize<C>, BlockSize<C>>;
 
 /// IGE mode encryptor.
@@ -56,7 +56,7 @@ where
     }
 }
 
-impl<C> BlockUser for Encrypt<C>
+impl<C> BlockSizeUser for Encrypt<C>
 where
     C: BlockEncryptMut + BlockCipher,
     C::BlockSize: Add,
@@ -74,7 +74,7 @@ where
     type Inner = C;
 }
 
-impl<C> IvUser for Encrypt<C>
+impl<C> IvSizeUser for Encrypt<C>
 where
     C: BlockEncryptMut + BlockCipher,
     C::BlockSize: Add,
@@ -143,7 +143,7 @@ where
     }
 }
 
-impl<C> BlockUser for Decrypt<C>
+impl<C> BlockSizeUser for Decrypt<C>
 where
     C: BlockDecryptMut + BlockCipher,
     C::BlockSize: Add,
@@ -161,7 +161,7 @@ where
     type Inner = C;
 }
 
-impl<C> IvUser for Decrypt<C>
+impl<C> IvSizeUser for Decrypt<C>
 where
     C: BlockDecryptMut + BlockCipher,
     C::BlockSize: Add,

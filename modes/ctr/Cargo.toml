@@ -16,7 +16,7 @@ cipher = "0.4"
 
 [dev-dependencies]
 aes = { version = "0.8", path = "../../aes/", features = ["force-soft"] } # Uses `force-soft` for MSRV 1.41
-magma = "0.7"
-kuznyechik = "0.7"
+magma = { version = "0.8", path = "../../magma" }
+kuznyechik = { version = "0.8", path = "../../kuznyechik" }
 cipher = { version = "0.4", features = ["dev"] }
 hex-literal = "0.2"

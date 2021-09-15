@@ -11,10 +11,10 @@
 #![warn(missing_docs, rust_2018_idioms)]
 
 use cipher::{
-    crypto_common::{InnerUser, IvUser},
+    crypto_common::{InnerUser, IvSizeUser},
     generic_array::{ArrayLength, GenericArray},
     inout::InOut,
-    Block, BlockCipher, BlockDecryptMut, BlockEncryptMut, BlockUser, InnerIvInit, Iv, IvState,
+    Block, BlockCipher, BlockDecryptMut, BlockEncryptMut, BlockSizeUser, InnerIvInit, Iv, IvState,
 };
 
 /// PCBC mode encryptor.
@@ -35,7 +35,7 @@ impl<C: BlockEncryptMut + BlockCipher> BlockEncryptMut for Encrypt<C> {
     }
 }
 
-impl<C: BlockEncryptMut + BlockCipher> BlockUser for Encrypt<C> {
+impl<C: BlockEncryptMut + BlockCipher> BlockSizeUser for Encrypt<C> {
     type BlockSize = C::BlockSize;
 }
 
@@ -43,7 +43,7 @@ impl<C: BlockEncryptMut + BlockCipher> InnerUser for Encrypt<C> {
     type Inner = C;
 }
 
-impl<C: BlockEncryptMut + BlockCipher> IvUser for Encrypt<C> {
+impl<C: BlockEncryptMut + BlockCipher> IvSizeUser for Encrypt<C> {
     type IvSize = C::BlockSize;
 }
 
@@ -82,7 +82,7 @@ impl<C: BlockDecryptMut + BlockCipher> BlockDecryptMut for Decrypt<C> {
     }
 }
 
-impl<C: BlockDecryptMut + BlockCipher> BlockUser for Decrypt<C> {
+impl<C: BlockDecryptMut + BlockCipher> BlockSizeUser for Decrypt<C> {
     type BlockSize = C::BlockSize;
 }
 
@@ -90,7 +90,7 @@ impl<C: BlockDecryptMut + BlockCipher> InnerUser for Decrypt<C> {
     type Inner = C;
 }
 
-impl<C: BlockDecryptMut + BlockCipher> IvUser for Decrypt<C> {
+impl<C: BlockDecryptMut + BlockCipher> IvSizeUser for Decrypt<C> {
     type IvSize = C::BlockSize;
 }
 

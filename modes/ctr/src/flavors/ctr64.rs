@@ -24,7 +24,7 @@ where
     type Nonce = GenericArray<u64, Chunks<B>>;
     type Backend = u64;
 
-    #[inline]
+    #[inline(always)]
     fn remaining(&self) -> Option<usize> {
         (u64::MAX - self.0).try_into().ok()
     }

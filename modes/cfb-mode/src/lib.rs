@@ -11,9 +11,9 @@
 #![warn(missing_docs, rust_2018_idioms)]
 
 use cipher::{
-    crypto_common::{InnerUser, IvUser},
+    crypto_common::{InnerUser, IvSizeUser},
     inout::{InOut, InOutBuf, InSrc, InTmpOutBuf},
-    AsyncStreamCipherCore, Block, BlockCipher, BlockDecryptMut, BlockEncryptMut, BlockUser,
+    AsyncStreamCipherCore, Block, BlockCipher, BlockDecryptMut, BlockEncryptMut, BlockSizeUser,
     InnerIvInit, Iv, IvState, StreamCipherCoreWrapper,
 };
 
@@ -68,7 +68,7 @@ impl<C: BlockEncryptMut + BlockCipher> BlockDecryptMut for CfbCore<C> {
     }
 }
 
-impl<C: BlockEncryptMut + BlockCipher> BlockUser for CfbCore<C> {
+impl<C: BlockEncryptMut + BlockCipher> BlockSizeUser for CfbCore<C> {
     type BlockSize = C::BlockSize;
 }
 
@@ -78,7 +78,7 @@ impl<C: BlockEncryptMut + BlockCipher> InnerUser for CfbCore<C> {
     type Inner = C;
 }
 
-impl<C: BlockEncryptMut + BlockCipher> IvUser for CfbCore<C> {
+impl<C: BlockEncryptMut + BlockCipher> IvSizeUser for CfbCore<C> {
     type IvSize = C::BlockSize;
 }
 
